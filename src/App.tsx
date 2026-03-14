@@ -20,7 +20,7 @@ import {
   ExternalLink,
   User,
   Menu,
-  X
+  X,
 Zap,
   Play,
   X
