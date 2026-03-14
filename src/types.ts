@@ -25,3 +25,43 @@ export interface AdminStats {
   totalCopies: number;
   recentPrompts: Prompt[];
 }
+
+export type AIProvider = 'openai' | 'anthropic' | 'gemini' | 'groq' | 'cohere' | 'mistral';
+
+export const AI_PROVIDERS: { value: AIProvider; label: string; defaultModel: string }[] = [
+  { value: 'openai',    label: 'OpenAI',        defaultModel: 'gpt-4o-mini' },
+  { value: 'anthropic', label: 'Anthropic',     defaultModel: 'claude-3-5-haiku-20241022' },
+  { value: 'gemini',    label: 'Google Gemini', defaultModel: 'gemini-1.5-flash' },
+  { value: 'groq',      label: 'Groq',          defaultModel: 'llama-3.1-8b-instant' },
+  { value: 'cohere',    label: 'Cohere',        defaultModel: 'command-r-plus-08-2024' },
+  { value: 'mistral',   label: 'Mistral',       defaultModel: 'mistral-small-latest' },
+];
+
+export interface ApiKey {
+  id: number;
+  label: string;
+  provider: AIProvider;
+  masked_key: string;
+  default_model: string | null;
+  is_active: number;
+  created_at: string;
+}
+
+export interface TestHistoryEntry {
+  id: number;
+  prompt_id: number;
+  prompt_title: string;
+  api_key_id: number;
+  key_label: string;
+  provider: AIProvider;
+  model_used: string;
+  response: string;
+  tokens_used: number;
+  created_at: string;
+}
+
+export interface PromptTestResult {
+  response: string;
+  tokens_used: number;
+  model: string;
+}
