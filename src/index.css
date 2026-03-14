@@ -40,16 +40,6 @@
   @apply bg-bg-dark border border-border-dim rounded-xl px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-brand-primary/50 transition-all;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  @apply bg-bg-dark;
-}
-
-::-webkit-scrollbar-thumb {
-  @apply bg-white/10 rounded-full hover:bg-white/20;
-}
-
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { @apply bg-bg-dark; }
+::-webkit-scrollbar-thumb { @apply bg-white/10 rounded-full hover:bg-white/20; }
