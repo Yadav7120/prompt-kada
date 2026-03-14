@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-@source "../src";
 
 @theme {
   --color-brand-primary: #6366f1;
