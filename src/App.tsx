@@ -21,11 +21,16 @@ import {
   User,
   Menu,
   X
-} from 'lucide-react';
+Zap,
+  Play,
+  X
+ } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, formatDate } from './lib/utils';
 import { Prompt, Category, AdminStats } from './types';
-
+import SettingsPage from './pages/SettingsPage';
+import AdminApiKeysPage from './pages/AdminApiKeysPage';
+import AdminTestPromptPage from './pages/AdminTestPromptPage';
 // --- Components ---
 
 const Sidebar = ({ isAdmin = false }) => {
