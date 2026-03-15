@@ -49,7 +49,7 @@ const Sidebar = ({ isAdmin = false }) => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
     { icon: Plus, label: 'Add Prompt', path: '/admin/editor' },
     { icon: Library, label: 'Manage Prompts', path: '/admin/manage' },
-    { icon: Settings, label: 'Settings', path: '/admin/settings' },
+    { icon: Settings, label: 'Settings', path: '/settings' },
   ] : [
     { icon: Library, label: 'Prompt Library', path: '/' },
     { icon: BarChart3, label: 'Trending', path: '/trending' },
