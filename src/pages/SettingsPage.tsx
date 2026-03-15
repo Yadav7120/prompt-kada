@@ -1,29 +1,84 @@
-import { useState } from 'react';
-import { User, Bell, Shield, Palette, Globe, ChevronRight, Check } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { User, Bell, Shield, Palette, Globe, ChevronRight, Check, Loader } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 const sections = [
-  { id: 'profile', label: 'Profile', icon: User },
+  { id: 'profile',       label: 'Profile',       icon: User },
   { id: 'notifications', label: 'Notifications', icon: Bell },
-  { id: 'appearance', label: 'Appearance', icon: Palette },
-  { id: 'privacy', label: 'Privacy', icon: Shield },
-  { id: 'language', label: 'Language', icon: Globe },
+  { id: 'appearance',    label: 'Appearance',    icon: Palette },
+  { id: 'privacy',       label: 'Privacy',       icon: Shield },
+  { id: 'language',      label: 'Language',      icon: Globe },
 ];
 
 export default function SettingsPage() {
-  const [active, setActive] = useState('profile');
-  const [saved, setSaved] = useState(false);
-  const [name, setName] = useState('Alex Rivera');
-  const [email, setEmail] = useState('alex@example.com');
-  const [notifCopy, setNotifCopy] = useState(true);
-  const [notifNew, setNotifNew] = useState(false);
-  const [theme, setTheme] = useState('dark');
-  const [language, setLanguage] = useState('en');
+  const [active, setActive]         = useState('profile');
+  const [loading, setLoading]       = useState(true);
+  const [saving, setSaving]         = useState(false);
+  const [saved, setSaved]           = useState(false);
+  const [error, setError]           = useState('');
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  // Profile state
+  const [name, setName]             = useState('');
+  const [email, setEmail]           = useState('');
+  const [notifCopy, setNotifCopy]   = useState(true);
+  const [notifNew, setNotifNew]     = useState(false);
+  const [theme, setTheme]           = useState('dark');
+  const [language, setLanguage]     = useState('en');
+
+  const token = localStorage.getItem('token');
+  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+
+  // Load profile on mount
+  useEffect(() => {
+    if (!token) { setLoading(false); return; }
+    fetch('/api/profile', { headers })
+      .then(r => r.json())
+      .then(data => {
+        setName(data.display_name || '');
+        setEmail(data.email || '');
+        setNotifCopy(Boolean(data.notif_copy));
+        setNotifNew(Boolean(data.notif_new));
+        setTheme(data.theme || 'dark');
+        setLanguage(data.language || 'en');
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({
+          display_name: name,
+          email,
+          theme,
+          language,
+          notif_copy: notifCopy,
+          notif_new:  notifNew,
+        }),
+      });
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2500);
+      } else {
+        const d = await res.json();
+        setError(d.message || 'Failed to save.');
+      }
+    } catch {
+      setError('Network error. Try again.');
+    }
+    setSaving(false);
   };
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <Loader size={28} className="animate-spin text-brand-primary" />
+    </div>
+  );
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -57,60 +112,49 @@ export default function SettingsPage() {
 
         {/* Content */}
         <div className="flex-1 glass-card p-6 space-y-6">
+
+          {/* ── Profile ── */}
           {active === 'profile' && (
             <>
               <h3 className="font-bold text-lg">Profile</h3>
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-16 h-16 rounded-full bg-brand-primary/20 flex items-center justify-center text-brand-primary text-2xl font-bold">
-                  {name.charAt(0)}
+                  {name.charAt(0).toUpperCase() || 'A'}
                 </div>
                 <div>
-                  <p className="font-medium">{name}</p>
-                  <p className="text-text-dim text-sm">Pro Member</p>
+                  <p className="font-medium">{name || 'No name set'}</p>
+                  <p className="text-text-dim text-sm">Admin</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div>
                   <label className="text-xs text-text-dim uppercase tracking-wider mb-2 block">Display Name</label>
-                  <input
-                    className="input-field w-full"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                  />
+                  <input className="input-field w-full" value={name} onChange={e => setName(e.target.value)} placeholder="Your name" />
                 </div>
                 <div>
                   <label className="text-xs text-text-dim uppercase tracking-wider mb-2 block">Email</label>
-                  <input
-                    className="input-field w-full"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                  />
+                  <input className="input-field w-full" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" type="email" />
                 </div>
               </div>
             </>
           )}
 
+          {/* ── Notifications ── */}
           {active === 'notifications' && (
             <>
               <h3 className="font-bold text-lg">Notifications</h3>
               <div className="space-y-4">
                 {[
                   { label: 'Notify when a prompt is copied', value: notifCopy, set: setNotifCopy },
-                  { label: 'Notify on new prompts added', value: notifNew, set: setNotifNew },
+                  { label: 'Notify on new prompts added',    value: notifNew,  set: setNotifNew  },
                 ].map((item) => (
                   <div key={item.label} className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
                     <span className="text-sm">{item.label}</span>
                     <button
                       onClick={() => item.set(!item.value)}
-                      className={cn(
-                        'w-11 h-6 rounded-full transition-all relative',
-                        item.value ? 'bg-brand-primary' : 'bg-white/10'
-                      )}
+                      className={cn('w-11 h-6 rounded-full transition-all relative', item.value ? 'bg-brand-primary' : 'bg-white/10')}
                     >
-                      <span className={cn(
-                        'absolute top-1 w-4 h-4 bg-white rounded-full transition-all',
-                        item.value ? 'left-6' : 'left-1'
-                      )} />
+                      <span className={cn('absolute top-1 w-4 h-4 bg-white rounded-full transition-all', item.value ? 'left-6' : 'left-1')} />
                     </button>
                   </div>
                 ))}
@@ -118,6 +162,7 @@ export default function SettingsPage() {
             </>
           )}
 
+          {/* ── Appearance ── */}
           {active === 'appearance' && (
             <>
               <h3 className="font-bold text-lg">Appearance</h3>
@@ -128,9 +173,7 @@ export default function SettingsPage() {
                     onClick={() => setTheme(t)}
                     className={cn(
                       'w-full flex items-center justify-between p-4 rounded-xl border transition-all',
-                      theme === t
-                        ? 'border-brand-primary bg-brand-primary/10 text-white'
-                        : 'border-border-dim bg-white/5 text-text-dim hover:text-white'
+                      theme === t ? 'border-brand-primary bg-brand-primary/10 text-white' : 'border-border-dim bg-white/5 text-text-dim hover:text-white'
                     )}
                   >
                     <span className="capitalize text-sm">{t} Mode</span>
@@ -141,6 +184,7 @@ export default function SettingsPage() {
             </>
           )}
 
+          {/* ── Privacy ── */}
           {active === 'privacy' && (
             <>
               <h3 className="font-bold text-lg">Privacy</h3>
@@ -160,6 +204,7 @@ export default function SettingsPage() {
             </>
           )}
 
+          {/* ── Language ── */}
           {active === 'language' && (
             <>
               <h3 className="font-bold text-lg">Language</h3>
@@ -176,9 +221,7 @@ export default function SettingsPage() {
                     onClick={() => setLanguage(l.code)}
                     className={cn(
                       'w-full flex items-center justify-between p-4 rounded-xl border transition-all',
-                      language === l.code
-                        ? 'border-brand-primary bg-brand-primary/10 text-white'
-                        : 'border-border-dim bg-white/5 text-text-dim hover:text-white'
+                      language === l.code ? 'border-brand-primary bg-brand-primary/10 text-white' : 'border-border-dim bg-white/5 text-text-dim hover:text-white'
                     )}
                   >
                     <span className="text-sm">{l.label}</span>
@@ -189,17 +232,25 @@ export default function SettingsPage() {
             </>
           )}
 
+          {/* Error */}
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+
+          {/* Save Button */}
           <button
             onClick={handleSave}
-            className={cn(
-              'btn-primary w-full justify-center mt-4',
-              saved && 'bg-green-500 hover:bg-green-600'
-            )}
+            disabled={saving}
+            className={cn('btn-primary w-full justify-center mt-4', saved && 'bg-green-500 hover:bg-green-600')}
           >
-            {saved ? <><Check size={18} /> Saved!</> : 'Save Changes'}
+            {saving ? (
+              <><Loader size={18} className="animate-spin" /> Saving...</>
+            ) : saved ? (
+              <><Check size={18} /> Saved!</>
+            ) : (
+              'Save Changes'
+            )}
           </button>
         </div>
       </div>
     </div>
   );
-                  }
+          }
