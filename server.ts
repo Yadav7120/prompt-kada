@@ -100,6 +100,18 @@ async function initDB() {
       FOREIGN KEY (prompt_id)  REFERENCES prompts(id),
       FOREIGN KEY (api_key_id) REFERENCES api_keys(id)
     );
+
+    CREATE TABLE IF NOT EXISTS user_profiles (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id      INTEGER UNIQUE NOT NULL,
+      display_name TEXT NOT NULL DEFAULT 'Admin',
+      email        TEXT NOT NULL DEFAULT '',
+      theme        TEXT NOT NULL DEFAULT 'dark',
+      language     TEXT NOT NULL DEFAULT 'en',
+      notif_copy   INTEGER DEFAULT 1,
+      notif_new    INTEGER DEFAULT 0,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
   `);
 
   // Seed only if db is empty
@@ -456,55 +468,4 @@ async function startServer() {
         const r = await fetch(`${baseUrls[provider] || 'https://api.openai.com/v1'}/chat/completions`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${keyRow.api_key}`, 'content-type': 'application/json' },
-          body: JSON.stringify({ model: chosenModel, max_tokens: 1024, messages: [{ role: 'user', content: prompt.content }] }),
-        });
-        const data = await r.json() as any;
-        if (!r.ok) return res.status(502).json({ message: data.error?.message || 'API error.' });
-        responseText = data.choices?.[0]?.message?.content || '';
-        tokensUsed   = data.usage?.total_tokens || 0;
-      }
-
-      await db.execute({
-        sql:  'INSERT INTO test_history (prompt_id, api_key_id, model_used, response, tokens_used) VALUES (?, ?, ?, ?, ?)',
-        args: [prompt_id, api_key_id, modelToUse ?? null, responseText, tokensUsed],
-      });
-
-      res.json({ response: responseText, tokens_used: tokensUsed, model: modelToUse });
-    } catch (err: any) {
-      res.status(500).json({ message: 'Failed to call AI API.', error: err.message });
-    }
-  });
-
-  app.get('/api/admin/test-history', authenticateToken, async (_req, res) => {
-    try {
-      const { rows } = await db.execute(`
-        SELECT th.*, p.title as prompt_title, k.label as key_label, k.provider
-        FROM test_history th
-        LEFT JOIN prompts p  ON th.prompt_id  = p.id
-        LEFT JOIN api_keys k ON th.api_key_id = k.id
-        ORDER BY th.created_at DESC LIMIT 50
-      `);
-      res.json(rows);
-    } catch (err: any) {
-      res.status(500).json({ message: 'Error.', error: err.message });
-    }
-  });
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // VITE / STATIC
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'spa' });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get(/^(?!\/api).*/, (_req, res) => res.sendFile(path.join(distPath, 'index.html')));
-  }
-
-  const PORT = Number(process.env.PORT) || 3000;
-  app.listen(PORT, '0.0.0.0', () => console.log(`Server running on http://localhost:${PORT}`));
-}
-
-startServer().catch(err => { console.error('Failed to start server:', err); process.exit(1); });
+          body: JSON.stringify({ model:
