@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { User, Bell, Shield, Palette, Globe, ChevronRight, Check, Loader } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { useProfile } from '../context/ProfileContext';
 
 const sections = [
   { id: 'profile',       label: 'Profile',       icon: User },
@@ -11,67 +12,16 @@ const sections = [
 ];
 
 export default function SettingsPage() {
-  const [active, setActive]         = useState('profile');
-  const [loading, setLoading]       = useState(true);
-  const [saving, setSaving]         = useState(false);
-  const [saved, setSaved]           = useState(false);
-  const [error, setError]           = useState('');
-
-  // Profile state
-  const [name, setName]             = useState('');
-  const [email, setEmail]           = useState('');
-  const [notifCopy, setNotifCopy]   = useState(true);
-  const [notifNew, setNotifNew]     = useState(false);
-  const [theme, setTheme]           = useState('dark');
-  const [language, setLanguage]     = useState('en');
-
-  const token = localStorage.getItem('token');
-  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-
-  // Load profile on mount
-  useEffect(() => {
-    if (!token) { setLoading(false); return; }
-    fetch('/api/profile', { headers })
-      .then(r => r.json())
-      .then(data => {
-        setName(data.display_name || '');
-        setEmail(data.email || '');
-        setNotifCopy(Boolean(data.notif_copy));
-        setNotifNew(Boolean(data.notif_new));
-        setTheme(data.theme || 'dark');
-        setLanguage(data.language || 'en');
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+  const { profile, loading, saving, error, updateProfile, saveProfile } = useProfile();
+  const [active, setActive] = useState('profile');
+  const [saved,  setSaved]  = useState(false);
 
   const handleSave = async () => {
-    setSaving(true);
-    setError('');
-    try {
-      const res = await fetch('/api/profile', {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({
-          display_name: name,
-          email,
-          theme,
-          language,
-          notif_copy: notifCopy,
-          notif_new:  notifNew,
-        }),
-      });
-      if (res.ok) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2500);
-      } else {
-        const d = await res.json();
-        setError(d.message || 'Failed to save.');
-      }
-    } catch {
-      setError('Network error. Try again.');
+    const ok = await saveProfile();
+    if (ok) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
     }
-    setSaving(false);
   };
 
   if (loading) return (
@@ -88,7 +38,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-6">
-        {/* Sidebar */}
+        {/* Sidebar nav */}
         <div className="w-full md:w-56 glass-card p-3 h-fit">
           {sections.map((s) => (
             <button
@@ -119,21 +69,32 @@ export default function SettingsPage() {
               <h3 className="font-bold text-lg">Profile</h3>
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-16 h-16 rounded-full bg-brand-primary/20 flex items-center justify-center text-brand-primary text-2xl font-bold">
-                  {name.charAt(0).toUpperCase() || 'A'}
+                  {profile.display_name.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <p className="font-medium">{name || 'No name set'}</p>
-                  <p className="text-text-dim text-sm">Admin</p>
+                  <p className="font-medium">{profile.display_name}</p>
+                  <p className="text-text-dim text-sm">{profile.email || 'No email set'}</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div>
                   <label className="text-xs text-text-dim uppercase tracking-wider mb-2 block">Display Name</label>
-                  <input className="input-field w-full" value={name} onChange={e => setName(e.target.value)} placeholder="Your name" />
+                  <input
+                    className="input-field w-full"
+                    value={profile.display_name}
+                    onChange={e => updateProfile({ display_name: e.target.value })}
+                    placeholder="Your name"
+                  />
                 </div>
                 <div>
                   <label className="text-xs text-text-dim uppercase tracking-wider mb-2 block">Email</label>
-                  <input className="input-field w-full" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" type="email" />
+                  <input
+                    className="input-field w-full"
+                    value={profile.email}
+                    onChange={e => updateProfile({ email: e.target.value })}
+                    placeholder="your@email.com"
+                    type="email"
+                  />
                 </div>
               </div>
             </>
@@ -145,13 +106,13 @@ export default function SettingsPage() {
               <h3 className="font-bold text-lg">Notifications</h3>
               <div className="space-y-4">
                 {[
-                  { label: 'Notify when a prompt is copied', value: notifCopy, set: setNotifCopy },
-                  { label: 'Notify on new prompts added',    value: notifNew,  set: setNotifNew  },
+                  { label: 'Notify when a prompt is copied', value: profile.notif_copy, key: 'notif_copy' as const },
+                  { label: 'Notify on new prompts added',    value: profile.notif_new,  key: 'notif_new'  as const },
                 ].map((item) => (
-                  <div key={item.label} className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
+                  <div key={item.key} className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
                     <span className="text-sm">{item.label}</span>
                     <button
-                      onClick={() => item.set(!item.value)}
+                      onClick={() => updateProfile({ [item.key]: !item.value })}
                       className={cn('w-11 h-6 rounded-full transition-all relative', item.value ? 'bg-brand-primary' : 'bg-white/10')}
                     >
                       <span className={cn('absolute top-1 w-4 h-4 bg-white rounded-full transition-all', item.value ? 'left-6' : 'left-1')} />
@@ -170,14 +131,16 @@ export default function SettingsPage() {
                 {['dark', 'darker', 'midnight'].map((t) => (
                   <button
                     key={t}
-                    onClick={() => setTheme(t)}
+                    onClick={() => updateProfile({ theme: t })}
                     className={cn(
                       'w-full flex items-center justify-between p-4 rounded-xl border transition-all',
-                      theme === t ? 'border-brand-primary bg-brand-primary/10 text-white' : 'border-border-dim bg-white/5 text-text-dim hover:text-white'
+                      profile.theme === t
+                        ? 'border-brand-primary bg-brand-primary/10 text-white'
+                        : 'border-border-dim bg-white/5 text-text-dim hover:text-white'
                     )}
                   >
                     <span className="capitalize text-sm">{t} Mode</span>
-                    {theme === t && <Check size={16} className="text-brand-primary" />}
+                    {profile.theme === t && <Check size={16} className="text-brand-primary" />}
                   </button>
                 ))}
               </div>
@@ -210,32 +173,32 @@ export default function SettingsPage() {
               <h3 className="font-bold text-lg">Language</h3>
               <div className="space-y-3">
                 {[
-                  { code: 'en', label: 'English' },
-                  { code: 'es', label: 'Spanish' },
-                  { code: 'fr', label: 'French' },
-                  { code: 'de', label: 'German' },
+                  { code: 'en', label: 'English'  },
+                  { code: 'es', label: 'Spanish'  },
+                  { code: 'fr', label: 'French'   },
+                  { code: 'de', label: 'German'   },
                   { code: 'ja', label: 'Japanese' },
                 ].map((l) => (
                   <button
                     key={l.code}
-                    onClick={() => setLanguage(l.code)}
+                    onClick={() => updateProfile({ language: l.code })}
                     className={cn(
                       'w-full flex items-center justify-between p-4 rounded-xl border transition-all',
-                      language === l.code ? 'border-brand-primary bg-brand-primary/10 text-white' : 'border-border-dim bg-white/5 text-text-dim hover:text-white'
+                      profile.language === l.code
+                        ? 'border-brand-primary bg-brand-primary/10 text-white'
+                        : 'border-border-dim bg-white/5 text-text-dim hover:text-white'
                     )}
                   >
                     <span className="text-sm">{l.label}</span>
-                    {language === l.code && <Check size={16} className="text-brand-primary" />}
+                    {profile.language === l.code && <Check size={16} className="text-brand-primary" />}
                   </button>
                 ))}
               </div>
             </>
           )}
 
-          {/* Error */}
           {error && <p className="text-red-400 text-sm">{error}</p>}
 
-          {/* Save Button */}
           <button
             onClick={handleSave}
             disabled={saving}
