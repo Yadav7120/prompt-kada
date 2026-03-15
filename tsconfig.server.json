@@ -11,5 +11,5 @@
     "noImplicitAny": false,
     "resolveJsonModule": true
   },
-  "include": ["server.ts", "types.ts", "utils.ts"]
+  "include": ["server.ts"]
 }
