@@ -941,7 +941,11 @@ const App = () => {
             <Route path="/admin/manage" element={<AdminManagePrompts showToast={showToast} />} />
             <Route path="/admin/editor" element={<AdminEditor showToast={showToast} />} />
             <Route path="/admin/editor/:id" element={<AdminEditor showToast={showToast} />} />
-          </Routes>
+            
+          <Route path="/settings" element={<SettingsPage />} />
+<Route path="/admin/api-keys" element={<AdminApiKeysPage />} />
+<Route path="/admin/test" element={<AdminTestPromptPage />} />
+</Routes>
         </AnimatePresence>
 
         <AnimatePresence>
