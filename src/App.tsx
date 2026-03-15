@@ -28,9 +28,9 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, formatDate } from './lib/utils';
 import { Prompt, Category, AdminStats } from './types';
-import SettingsPage from './pages/SettingsPage';
-import AdminApiKeysPage from './pages/AdminApiKeysPage';
-import AdminTestPromptPage from './pages/AdminTestPromptPage';
+import SettingsPage from './Pages/SettingsPage';
+import AdminApiKeysPage from './Pages/AdminApiKeysPage';
+import AdminTestPromptPage from './Pages/AdminTestPromptPage';
 import { ProfileProvider, useProfile } from './context/ProfileContext';
 
 // --- Sidebar ---
